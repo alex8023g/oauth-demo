@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Google OAuth with JWT Strategy
+
+A Next.js application demonstrating Google OAuth authentication with JWT tokens, without using authentication frameworks like NextAuth.
+
+## Features
+
+- Google OAuth 2.0 authentication
+- JWT access tokens (15 min) and refresh tokens (7 days)
+- SQLite database for user and session storage
+- Protected dashboard route
+- HttpOnly secure cookies
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up environment variables
+
+Create a `.env.local` file:
+
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+JWT_SECRET=your_jwt_secret_key
+```
+
+### 3. Initialize the database
+
+```bash
+npx tsx scripts/init-db.ts
+```
+
+### 4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+  api/
+    auth/
+      google/
+        route.ts          # Initiates Google OAuth flow
+        callback/
+          route.ts        # Handles OAuth callback, stores user
+  dashboard/
+    page.tsx              # Protected dashboard page
+  login/
+    page.tsx              # Login page
+lib/
+  db/
+    index.ts              # SQLite database operations
+    schema.sql            # Database schema
+  jwt.ts                  # JWT token utilities
+scripts/
+  init-db.ts              # Database initialization script
+  check-db.ts             # Database structure checker
+```
 
-## Learn More
+## Database Schema
 
-To learn more about Next.js, take a look at the following resources:
+### Users Table
+- `id` - Primary key
+- `email` - User email (unique)
+- `name` - Display name
+- `google_id` - Google account ID (unique)
+- `avatar_url` - Profile picture URL
+- `created_at`, `updated_at` - Timestamps
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Sessions Table
+- `id` - Primary key
+- `user_id` - Foreign key to users
+- `token` - Refresh token
+- `expires_at` - Token expiration
+- `created_at` - Timestamp
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Tech Stack
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js 15](https://nextjs.org/) - React framework
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - SQLite database
+- [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) - JWT handling
+- [Tailwind CSS](https://tailwindcss.com/) - Styling

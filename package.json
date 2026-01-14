@@ -6,15 +6,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "init-db": "tsx ./scripts/init-db.ts",
+    "check-db": "tsx ./scripts/check-db.ts"
   },
   "dependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "better-sqlite3": "^12.6.0",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
