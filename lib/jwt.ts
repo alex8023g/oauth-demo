@@ -8,8 +8,14 @@ export interface JWTPayload {
   type?: 'access' | 'refresh';
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || '';
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is not defined in environment variables');
+}
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || '';
+if (!REFRESH_TOKEN_SECRET) {
+  throw new Error('REFRESH_TOKEN_SECRET is not defined in environment variables');
+}
 const ACCESS_TOKEN_EXPIRES_IN = '15m'; // Short-lived access token
 const REFRESH_TOKEN_EXPIRES_IN = '7d'; // Long-lived refresh token
 // const ACCESS_TOKEN_EXPIRES_IN = '1m'; // Short-lived access token

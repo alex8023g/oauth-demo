@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signToken, signRefreshToken } from '@/lib/jwt';
-import { userOperations /* , sessionOperations  */ } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -78,37 +78,49 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to get user info');
     }
 
-    const userInfo: GoogleUserInfo = await userInfoResponse.json();
-    console.log('🚀 ~ GET ~ userInfo:', userInfo);
+    const googleUser: GoogleUserInfo = await userInfoResponse.json();
+    console.log('🚀 ~ GET ~ userInfo:', googleUser);
 
     // Store or update user in database
-    let user = userOperations.findByGoogleId(userInfo.id);
+    let user = await prisma.user.findUnique({
+      where: { googleId: googleUser.id },
+    });
 
     if (!user) {
       // Check if user exists by email
-      user = userOperations.findByEmail(userInfo.email);
+      user = await prisma.user.findUnique({
+        where: { email: googleUser.email },
+      });
 
       if (user) {
         // Update existing user with Google ID
-        user = userOperations.update(user.id, {
-          google_id: userInfo.id,
-          name: userInfo.name,
-          avatar_url: userInfo.picture,
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            googleId: googleUser.id,
+            name: googleUser.name,
+            avatarUrl: googleUser.picture,
+          },
         });
       } else {
         // Create new user
-        user = userOperations.create({
-          email: userInfo.email,
-          name: userInfo.name,
-          google_id: userInfo.id,
-          avatar_url: userInfo.picture,
+        user = await prisma.user.create({
+          data: {
+            email: googleUser.email,
+            name: googleUser.name,
+            googleId: googleUser.id,
+            avatarUrl: googleUser.picture,
+          },
         });
       }
     } else {
       // Update existing user's info
-      user = userOperations.update(user.id, {
-        name: userInfo.name,
-        avatar_url: userInfo.picture,
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: googleUser.name,
+          avatarUrl: googleUser.picture,
+        },
       });
     }
 
@@ -116,25 +128,27 @@ export async function GET(request: NextRequest) {
 
     // Create JWT tokens with user information from database
     const accessToken = signToken({
-      userId: user!.id.toString(),
-      email: user!.email,
-      name: user!.name || '',
-      picture: user!.avatar_url || '',
+      userId: user.id.toString(),
+      email: user.email,
+      name: user.name || '',
+      picture: user.avatarUrl || '',
     });
 
     const refreshToken = signRefreshToken({
-      userId: user!.id.toString(),
-      email: user!.email,
-      name: user!.name || '',
-      picture: user!.avatar_url || '',
+      userId: user.id.toString(),
+      email: user.email,
+      name: user.name || '',
+      picture: user.avatarUrl || '',
     });
 
     // Store refresh token in database
     // const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000); // 7 days
-    // sessionOperations.create({
-    //   user_id: user!.id,
-    //   token: refreshToken,
-    //   expires_at: expiresAt,
+    // await prisma.session.create({
+    //   data: {
+    //     userId: user.id,
+    //     token: refreshToken,
+    //     expiresAt,
+    //   },
     // });
 
     // Create a response with a redirect

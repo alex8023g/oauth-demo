@@ -6,7 +6,7 @@ A Next.js application demonstrating Google OAuth authentication with JWT tokens,
 
 - Google OAuth 2.0 authentication
 - JWT access tokens (15 min) and refresh tokens (7 days)
-- SQLite database for user and session storage
+- Prisma ORM with SQLite database
 - Protected dashboard route
 - HttpOnly secure cookies
 
@@ -20,9 +20,10 @@ npm install
 
 ### 2. Set up environment variables
 
-Create a `.env.local` file:
+Create a `.env` file:
 
 ```env
+DATABASE_URL="file:./data/database.db"
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
@@ -32,7 +33,7 @@ JWT_SECRET=your_jwt_secret_key
 ### 3. Initialize the database
 
 ```bash
-npx tsx scripts/init-db.ts
+npx prisma migrate dev
 ```
 
 ### 4. Run the development server
@@ -58,35 +59,34 @@ app/
   login/
     page.tsx              # Login page
 lib/
-  db/
-    index.ts              # SQLite database operations
-    schema.sql            # Database schema
+  generated/prisma/       # Generated Prisma client
+  prisma.ts               # Prisma client singleton
   jwt.ts                  # JWT token utilities
-scripts/
-  init-db.ts              # Database initialization script
-  check-db.ts             # Database structure checker
+prisma/
+  schema.prisma           # Database schema
+  migrations/             # Database migrations
 ```
 
 ## Database Schema
 
-### Users Table
+### User
 - `id` - Primary key
 - `email` - User email (unique)
 - `name` - Display name
-- `google_id` - Google account ID (unique)
-- `avatar_url` - Profile picture URL
-- `created_at`, `updated_at` - Timestamps
+- `googleId` - Google account ID (unique)
+- `avatarUrl` - Profile picture URL
+- `createdAt`, `updatedAt` - Timestamps
 
-### Sessions Table
+### Session
 - `id` - Primary key
-- `user_id` - Foreign key to users
+- `userId` - Foreign key to User
 - `token` - Refresh token
-- `expires_at` - Token expiration
-- `created_at` - Timestamp
+- `expiresAt` - Token expiration
+- `createdAt` - Timestamp
 
 ## Tech Stack
 
 - [Next.js 15](https://nextjs.org/) - React framework
-- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) - SQLite database
+- [Prisma](https://www.prisma.io/) - ORM with SQLite adapter
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) - JWT handling
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
