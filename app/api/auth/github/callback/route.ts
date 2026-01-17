@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
 
       if (emailsResponse.ok) {
         const emails: GitHubEmail[] = await emailsResponse.json();
+        console.log('🚀 ~ GET ~ emails:', emails);
         const primaryEmail = emails.find((e) => e.primary && e.verified);
         userEmail = primaryEmail?.email || emails[0]?.email || null;
       }
@@ -106,45 +107,73 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=no_email', request.url));
     }
 
-    // Store or update user in database
-    let user = await prisma.user.findUnique({
-      where: { githubId: githubUser.id.toString() },
+    // Check if account exists for this GitHub ID
+    const existingAccount = await prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: 'github',
+          providerAccountId: githubUser.id.toString(),
+        },
+      },
+      include: { user: true },
     });
 
-    if (!user) {
+    let user;
+
+    if (existingAccount) {
+      // Update existing user's info
+      user = await prisma.user.update({
+        where: { id: existingAccount.userId },
+        data: {
+          name: githubUser.name || githubUser.login,
+          avatarUrl: githubUser.avatar_url,
+        },
+      });
+
+      // Update account tokens
+      await prisma.account.update({
+        where: { id: existingAccount.id },
+        data: {
+          accessToken: tokenData.access_token,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
+        },
+      });
+    } else {
       // Check if user exists by email
       user = await prisma.user.findUnique({
         where: { email: userEmail },
       });
 
-      if (user) {
-        // Update existing user with GitHub ID
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            githubId: githubUser.id.toString(),
-            name: githubUser.name || githubUser.login,
-            avatarUrl: githubUser.avatar_url,
-          },
-        });
-      } else {
+      if (!user) {
         // Create new user
         user = await prisma.user.create({
           data: {
             email: userEmail,
             name: githubUser.name || githubUser.login,
-            githubId: githubUser.id.toString(),
+            avatarUrl: githubUser.avatar_url,
+          },
+        });
+      } else {
+        // Update existing user's info
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            name: githubUser.name || githubUser.login,
             avatarUrl: githubUser.avatar_url,
           },
         });
       }
-    } else {
-      // Update existing user's info
-      user = await prisma.user.update({
-        where: { id: user.id },
+
+      // Create new account
+      await prisma.account.create({
         data: {
-          name: githubUser.name || githubUser.login,
-          avatarUrl: githubUser.avatar_url,
+          userId: user.id,
+          provider: 'github',
+          providerAccountId: githubUser.id.toString(),
+          accessToken: tokenData.access_token,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
         },
       });
     }

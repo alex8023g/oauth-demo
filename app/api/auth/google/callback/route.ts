@@ -81,45 +81,81 @@ export async function GET(request: NextRequest) {
     const googleUser: GoogleUserInfo = await userInfoResponse.json();
     console.log('🚀 ~ GET ~ userInfo:', googleUser);
 
-    // Store or update user in database
-    let user = await prisma.user.findUnique({
-      where: { googleId: googleUser.id },
+    // Check if account exists for this Google ID
+    const existingAccount = await prisma.account.findUnique({
+      where: {
+        provider_providerAccountId: {
+          provider: 'google',
+          providerAccountId: googleUser.id,
+        },
+      },
+      include: { user: true },
     });
 
-    if (!user) {
+    let user;
+
+    if (existingAccount) {
+      // Update existing user's info
+      user = await prisma.user.update({
+        where: { id: existingAccount.userId },
+        data: {
+          name: googleUser.name,
+          avatarUrl: googleUser.picture,
+        },
+      });
+
+      // Update account tokens
+      await prisma.account.update({
+        where: { id: existingAccount.id },
+        data: {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresAt: tokenData.expires_in
+            ? Math.floor(Date.now() / 1000) + tokenData.expires_in
+            : null,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
+        },
+      });
+    } else {
       // Check if user exists by email
       user = await prisma.user.findUnique({
         where: { email: googleUser.email },
       });
 
-      if (user) {
-        // Update existing user with Google ID
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            googleId: googleUser.id,
-            name: googleUser.name,
-            avatarUrl: googleUser.picture,
-          },
-        });
-      } else {
+      if (!user) {
         // Create new user
         user = await prisma.user.create({
           data: {
             email: googleUser.email,
             name: googleUser.name,
-            googleId: googleUser.id,
+            avatarUrl: googleUser.picture,
+          },
+        });
+      } else {
+        // Update existing user's info
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            name: googleUser.name,
             avatarUrl: googleUser.picture,
           },
         });
       }
-    } else {
-      // Update existing user's info
-      user = await prisma.user.update({
-        where: { id: user.id },
+
+      // Create new account
+      await prisma.account.create({
         data: {
-          name: googleUser.name,
-          avatarUrl: googleUser.picture,
+          userId: user.id,
+          provider: 'google',
+          providerAccountId: googleUser.id,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresAt: tokenData.expires_in
+            ? Math.floor(Date.now() / 1000) + tokenData.expires_in
+            : null,
+          tokenType: tokenData.token_type,
+          scope: tokenData.scope,
         },
       });
     }
@@ -140,16 +176,6 @@ export async function GET(request: NextRequest) {
       name: user.name || '',
       picture: user.avatarUrl || '',
     });
-
-    // Store refresh token in database
-    // const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000); // 7 days
-    // await prisma.session.create({
-    //   data: {
-    //     userId: user.id,
-    //     token: refreshToken,
-    //     expiresAt,
-    //   },
-    // });
 
     // Create a response with a redirect
     const response = NextResponse.redirect(new URL('/', request.url));
