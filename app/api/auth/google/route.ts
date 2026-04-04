@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI; // || 'http://localhost:3000/api/auth/google/callback';
+
+  if (!redirectUri) {
+    return NextResponse.json(
+      { error: 'Google OAuth redirect URI is not configured' },
+      { status: 500 },
+    );
+  }
 
   if (!googleClientId) {
     return NextResponse.json(
       { error: 'Google OAuth is not configured' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 

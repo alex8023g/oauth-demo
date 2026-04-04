@@ -166,12 +166,12 @@ export default function DashboardPage() {
                 JWT Token
               </span>
             </div>
-            <div className='flex justify-between'>
+            {/* <div className='flex justify-between'>
               <span className='text-zinc-600 dark:text-zinc-400'>Provider:</span>
               <span className='font-medium text-zinc-900 dark:text-zinc-100'>
                 Google OAuth
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

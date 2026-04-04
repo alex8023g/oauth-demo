@@ -234,7 +234,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Create a response with a redirect
-    const response = NextResponse.redirect(new URL('/', host));
+    const response = NextResponse.redirect(
+      new URL('/dashboard', process.env.NEXT_PUBLIC_HOST),
+    );
 
     // Set access token as an httpOnly cookie (short-lived)
     response.cookies.set('auth_token', accessToken, {

@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "init-db": "tsx ./scripts/init-db.ts",
-    "check-db": "tsx ./scripts/check-db.ts"
+    "db:init": "prisma generate && prisma db push",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.2.0",

@@ -35,8 +35,14 @@ export async function GET(request: NextRequest) {
 
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI; // || 'http://localhost:3000/api/auth/google/callback';
+
+  if (!redirectUri) {
+    return NextResponse.json(
+      { error: 'Google OAuth redirect URI is not configured' },
+      { status: 500 },
+    );
+  }
 
   if (!googleClientId || !googleClientSecret) {
     return NextResponse.redirect(new URL('/login?error=config_error', request.url));
@@ -71,7 +77,7 @@ export async function GET(request: NextRequest) {
         headers: {
           Authorization: `Bearer ${tokenData.access_token}`,
         },
-      }
+      },
     );
 
     if (!userInfoResponse.ok) {
@@ -178,7 +184,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Create a response with a redirect
-    const response = NextResponse.redirect(new URL('/', request.url));
+    const response = NextResponse.redirect(
+      new URL('/dashboard', process.env.NEXT_PUBLIC_HOST),
+    );
 
     // Set access token as an httpOnly cookie (short-lived)
     response.cookies.set('auth_token', accessToken, {

@@ -1,35 +1,29 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+const errorMessages: { [key: string]: string } = {
+  no_code: 'No authorization code received',
+  config_error: 'OAuth configuration error',
+  oauth_failed: 'Authentication failed. Please try again.',
+  access_denied: 'Access was denied',
+};
+
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const searchParams = useSearchParams();
 
-  useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      const errorMessages: { [key: string]: string } = {
-        no_code: 'No authorization code received',
-        config_error: 'OAuth configuration error',
-        oauth_failed: 'Authentication failed. Please try again.',
-        access_denied: 'Access was denied',
-      };
-
-      (async () => {
-        setError(errorMessages[errorParam] || 'An error occurred');
-      })();
-    }
-  }, [searchParams]);
+  const errorParam = searchParams.get('error');
+  const error = submitError || (errorParam ? (errorMessages[errorParam] ?? 'An error occurred') : '');
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setSubmitError('');
 
     // TODO: Implement your authentication logic here
     console.log('Login attempt:', { email, password });
@@ -202,5 +196,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
